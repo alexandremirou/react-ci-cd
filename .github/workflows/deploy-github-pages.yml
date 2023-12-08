@@ -1,0 +1,64 @@
+name: Deploy GitHub Pages
+
+#Déclenche le déploiement à chaque push sur la branche 'main'
+on:
+  push:
+    branches:
+      - main
+    # Action manuel pour exécuter l'action
+    # 'workflow_dispatch:
+    #  branches:
+    #    - main'
+
+# Définition ds permissions et autorisations afin de déployer sur GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    environment: production
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./
+    steps:
+      # Récupération du code
+      - name: Fetch Code
+        uses: actions/checkout@v4
+      # Installation des dépendances
+      - name: Install dependencies
+        run: npm install
+      # Build de react
+      - name: Build
+        run: npm run build
+      # Génération de l'artefact
+      - name: Generate Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifact
+          path: ./dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Configuration de GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      # Déploiement de GitHub Pages  
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v3
+        with:
+          artifact_name: artifact
+      gi
